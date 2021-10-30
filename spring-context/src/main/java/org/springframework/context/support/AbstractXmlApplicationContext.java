@@ -130,7 +130,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 		// 这里loadBeanDefinitions有两个分支 不过第二个分支进去后也是不断将String类型的ConfigLocation
 		// 转换为Resource后再调用第一个loadBeanDefinitions方法
 		if (configResources != null) {
-			// 看这个
+			// 看这个即可
 			reader.loadBeanDefinitions(configResources);
 		}
 

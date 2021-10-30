@@ -114,17 +114,24 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		 * @return new instance of the dynamically generated subclass
 		 */
 		public Object instantiate(@Nullable Constructor<?> ctor, @Nullable Object... args) {
+
+			// 获得增强后的子类Class对象
 			Class<?> subclass = createEnhancedSubclass(this.beanDefinition);
+
 			Object instance;
+			// 没有构造器
 			if (ctor == null) {
+				// 反射获取增强后的子类实例
 				instance = BeanUtils.instantiateClass(subclass);
-			}
-			else {
+
+			} else {
 				try {
+					// 获取构造器
 					Constructor<?> enhancedSubclassConstructor = subclass.getConstructor(ctor.getParameterTypes());
+					// 通过构造器进行实例生成
 					instance = enhancedSubclassConstructor.newInstance(args);
-				}
-				catch (Exception ex) {
+
+				} catch (Exception ex) {
 					throw new BeanInstantiationException(this.beanDefinition.getBeanClass(),
 							"Failed to invoke constructor for CGLIB enhanced subclass [" + subclass.getName() + "]", ex);
 				}
@@ -135,6 +142,8 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 			factory.setCallbacks(new Callback[] {NoOp.INSTANCE,
 					new LookupOverrideMethodInterceptor(this.beanDefinition, this.owner),
 					new ReplaceOverrideMethodInterceptor(this.beanDefinition, this.owner)});
+			
+			// 返回增强后的实例
 			return instance;
 		}
 

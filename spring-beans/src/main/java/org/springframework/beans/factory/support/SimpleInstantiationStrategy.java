@@ -57,14 +57,30 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	}
 
 
+	/**
+	 * 实例化Bean
+	 * @param bd the bean definition
+	 * @param beanName the name of the bean when it is created in this context.
+	 * The name can be {@code null} if we are autowiring a bean which doesn't
+	 * belong to the factory.
+	 * @param owner the owning BeanFactory
+	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
-		// Don't override the class with CGLIB if no overrides.
+
+		// 如果有需要覆写或动态替换的方法则需要使用CGLIB进行动态代理，因为可以在创建代理的同时将动态方法织入类中
+		// 但如果没有需要动态改变的方法，为方便直接使用反射就行了
+
+		// 1.这里不存在方法覆写或替换，使用反射
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
+
+			// 实例化时加锁
 			synchronized (bd.constructorArgumentLock) {
+
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
+					// 获取Class对象
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
@@ -75,19 +91,24 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							// 获取构造器
 							constructorToUse = clazz.getDeclaredConstructor();
 						}
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
-					}
-					catch (Throwable ex) {
+					} catch (Throwable ex) {
 						throw new BeanInstantiationException(clazz, "No default constructor found", ex);
 					}
 				}
 			}
+			// 使用反射方式初始化Class对象
+			// 利用构造方法进行实例化
 			return BeanUtils.instantiateClass(constructorToUse);
-		}
-		else {
-			// Must generate CGLIB subclass.
+
+			// 2.这里存在方法覆写或替换,使用CGLIB
+		} else {
+			// 存在方法覆写，利用 CGLIB 来完成实例化，需要依赖于 CGLIB 生成子类，这里就不展开了。
+			// tips: 因为如果不使用 CGLIB 的话，存在 override 的情况 JDK 并没有提供相应的实例化支持
+			// 实现类：CglibSubclassingInstantiationStrategy.java
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

@@ -65,6 +65,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	 * Create a new SimpleApplicationEventMulticaster for the given BeanFactory.
 	 */
 	public SimpleApplicationEventMulticaster(BeanFactory beanFactory) {
+		// 看下去
 		setBeanFactory(beanFactory);
 	}
 
@@ -127,15 +128,24 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		multicastEvent(event, resolveDefaultEventType(event));
 	}
 
+	/**
+	 * 广播事件
+	 * @param event the event to multicast
+	 * @param eventType the type of event (can be null)
+	 */
 	@Override
 	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
+
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
+
+		// 遍历所有监听器
 		for (final ApplicationListener<?> listener : getApplicationListeners(event, type)) {
 			Executor executor = getTaskExecutor();
 			if (executor != null) {
 				executor.execute(() -> invokeListener(listener, event));
 			}
 			else {
+				// 回调Listener的onApplicationEvent方法，将事件发送给各个监听器
 				invokeListener(listener, event);
 			}
 		}

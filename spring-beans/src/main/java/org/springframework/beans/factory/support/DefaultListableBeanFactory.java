@@ -720,47 +720,66 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return (this.configurationFrozen || super.isBeanEligibleForMetadataCaching(beanName));
 	}
 
+	/**
+	 * 预初始化singletons
+	 */
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Pre-instantiating singletons in " + this);
+		if (logger.isInfoEnabled()) {
+			logger.info("Pre-instantiating singletons in: " + this);
 		}
 
-		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
-		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// this.beanDefinitionNames 保存了所有的 beanNames
+		// 这里拿到全部的BeanNames
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
-		// Trigger initialization of all non-lazy singleton beans...
+		// 对每一个非lazy-init的singleton bean进行初始化
+		// 下面这个循环，触发所有的非懒加载的singleton beans的初始化操作
 		for (String beanName : beanNames) {
+
+			// 合并父Bean中的配置，注意 <bean id="" class="" parent="" /> 中的 parent，用的不多吧
+			// 根据BeanName获取BeanDefinition
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+
+			// 对BeanDefinition进行判断，仅对singleton且非lazy-init的实例化
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+
+				// 处理FactoryBean
 				if (isFactoryBean(beanName)) {
+
+					// FactoryBean的话，在beanName前面加上FactoryBean特有的‘&’符号后再调用getBean
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
+						// 判断当前FactoryBean是否是SmartFactoryBean的实现，此处忽略，直接跳过
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
 							isEagerInit = AccessController.doPrivileged(
 									(PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
 									getAccessControlContext());
-						}
-						else {
+						} else {
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+
 						if (isEagerInit) {
 							getBean(beanName);
 						}
 					}
-				}
-				else {
+
+					// 不是FactoryBean
+					// 对于普通的 Bean，只要调用 getBean(beanName) 这个方法就可以进行初始化了
+				} else {
 					getBean(beanName);
 				}
 			}
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// 到这里说明所有的非懒加载的 singleton beans 已经完成了初始化
+		// 如果定义的 bean 是实现了 SmartInitializingSingleton 接口的，那么在这里得到回调，忽略
 		for (String beanName : beanNames) {
+			// 返回单例对象
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;

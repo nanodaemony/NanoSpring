@@ -73,7 +73,11 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 		this.embeddedValueResolver = new EmbeddedValueResolver(applicationContext.getBeanFactory());
 	}
 
-
+	/**
+	 * BeanPostProcessor接口方法的实现(重要！！！)
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 */
 	@Override
 	@Nullable
 	public Object postProcessBeforeInitialization(final Object bean, String beanName) throws BeansException {
@@ -93,6 +97,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 			}, acc);
 		}
 		else {
+			// 调用Aware接口
 			invokeAwareInterfaces(bean);
 		}
 
@@ -100,6 +105,8 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 	}
 
 	private void invokeAwareInterfaces(Object bean) {
+
+		// 根据实现的接口而设置不同内容
 		if (bean instanceof Aware) {
 			if (bean instanceof EnvironmentAware) {
 				((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
@@ -116,6 +123,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 			if (bean instanceof MessageSourceAware) {
 				((MessageSourceAware) bean).setMessageSource(this.applicationContext);
 			}
+			// !!!!这个就是为实现了ApplicationContextAware接口的类注入ApplicationContext
 			if (bean instanceof ApplicationContextAware) {
 				((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
 			}

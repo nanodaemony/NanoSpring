@@ -67,6 +67,8 @@ public class AnnotatedBeanDefinitionReader {
 	 * @see #setEnvironment(Environment)
 	 */
 	public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry) {
+
+		// 先生成环境再创建
 		this(registry, getOrCreateEnvironment(registry));
 	}
 
@@ -84,6 +86,8 @@ public class AnnotatedBeanDefinitionReader {
 		Assert.notNull(environment, "Environment must not be null");
 		this.registry = registry;
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
+		// 这里很重要
+		// 往容器中注入了各种内部需要的组件的BeanDefinition!!!
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 	}
 
@@ -132,6 +136,7 @@ public class AnnotatedBeanDefinitionReader {
 	 */
 	public void register(Class<?>... annotatedClasses) {
 		for (Class<?> annotatedClass : annotatedClasses) {
+			// 注册配置类中的Bean
 			registerBean(annotatedClass);
 		}
 	}
@@ -213,6 +218,7 @@ public class AnnotatedBeanDefinitionReader {
 	<T> void doRegisterBean(Class<T> annotatedClass, @Nullable Supplier<T> instanceSupplier, @Nullable String name,
 			@Nullable Class<? extends Annotation>[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers) {
 
+		// 初始化一个BeanDefinition对象(由于承载各种Bean的属性)
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(annotatedClass);
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
@@ -229,6 +235,7 @@ public class AnnotatedBeanDefinitionReader {
 				if (Primary.class == qualifier) {
 					abd.setPrimary(true);
 				}
+				// 是否标注延迟初始化
 				else if (Lazy.class == qualifier) {
 					abd.setLazyInit(true);
 				}
@@ -241,8 +248,11 @@ public class AnnotatedBeanDefinitionReader {
 			customizer.customize(abd);
 		}
 
+		// 生成BeanDefinitionHolder
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+		// 注册BeanDefinitionHolder
+		// 把自己的配置类的定义注册到容器中
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}
 

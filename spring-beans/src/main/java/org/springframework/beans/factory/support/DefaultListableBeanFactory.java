@@ -729,28 +729,29 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			logger.info("Pre-instantiating singletons in: " + this);
 		}
 
+		// 1.创建beanDefinitionNames的副本beanNames用于后续的遍历，以允许init等方法注册新的bean定义
 		// this.beanDefinitionNames 保存了所有的 beanNames
-		// 这里拿到全部的BeanNames
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
-		// 对每一个非lazy-init的singleton bean进行初始化
+		// 2.对每一个非lazy-init的singleton bean进行初始化
 		// 下面这个循环，触发所有的非懒加载的singleton beans的初始化操作
 		for (String beanName : beanNames) {
 
-			// 合并父Bean中的配置，注意 <bean id="" class="" parent="" /> 中的 parent，用的不多吧
-			// 根据BeanName获取BeanDefinition
+			// 3.获取beanName对应的MergedBeanDefinition
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 
-			// 对BeanDefinition进行判断，仅对singleton且非lazy-init的实例化
+			// 4.对BeanDefinition进行判断，仅对不是抽象类、singleton且非懒加载的实例化
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 
-				// 处理FactoryBean
+				// 5.判断beanName对应的bean是否为FactoryBean
 				if (isFactoryBean(beanName)) {
-
-					// FactoryBean的话，在beanName前面加上FactoryBean特有的‘&’符号后再调用getBean
+					// 5.1 通过beanName获取FactoryBean实例
+					// 注意：通过getBean(&beanName)拿到的是FactoryBean本身；通过getBean(beanName)拿到的是FactoryBean创建的Bean实例
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
+						// 5.2 判断这个FactoryBean是否希望急切的初始化
 						// 判断当前FactoryBean是否是SmartFactoryBean的实现，此处忽略，直接跳过
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
@@ -761,25 +762,22 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
-
+						// 5.3 如果希望急切的初始化，则通过beanName获取bean实例
 						if (isEagerInit) {
 							getBean(beanName);
 						}
 					}
 
-					// 不是FactoryBean
-					// 对于普通的 Bean，只要调用 getBean(beanName) 这个方法就可以进行初始化了
+					// 6.不是FactoryBean，仅仅是普通的 Bean，调用 getBean(beanName) 方法即可进行初始化
 				} else {
 					getBean(beanName);
 				}
 			}
 		}
 
-		// Trigger post-initialization callback for all applicable beans...
-		// 到这里说明所有的非懒加载的 singleton beans 已经完成了初始化
-		// 如果定义的 bean 是实现了 SmartInitializingSingleton 接口的，那么在这里得到回调，忽略
+		// 7.到这里说明所有的非懒加载的单例 beans 已经完成了初始化
+		// 如果定义的 bean 是实现了 SmartInitializingSingleton 接口的，那么在这里进行回调(忽略)
 		for (String beanName : beanNames) {
-			// 返回单例对象
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
@@ -788,8 +786,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						smartSingleton.afterSingletonsInstantiated();
 						return null;
 					}, getAccessControlContext());
-				}
-				else {
+				} else {
 					smartSingleton.afterSingletonsInstantiated();
 				}
 			}

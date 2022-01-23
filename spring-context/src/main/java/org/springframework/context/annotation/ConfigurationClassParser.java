@@ -167,6 +167,7 @@ class ConfigurationClassParser {
 		for (BeanDefinitionHolder holder : configCandidates) {
 			BeanDefinition bd = holder.getBeanDefinition();
 			try {
+				// 注解方式配置的
 				if (bd instanceof AnnotatedBeanDefinition) {
 					parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
 				}
@@ -223,6 +224,7 @@ class ConfigurationClassParser {
 			return;
 		}
 
+		// 看看是否已经有了
 		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
 		if (existingClass != null) {
 			if (configClass.isImported()) {
@@ -231,8 +233,7 @@ class ConfigurationClassParser {
 				}
 				// Otherwise ignore new imported config class; existing non-imported class overrides it.
 				return;
-			}
-			else {
+			} else {
 				// Explicit bean definition found, probably replacing an import.
 				// Let's remove the old one and go with the new one.
 				this.configurationClasses.remove(configClass);
@@ -243,9 +244,10 @@ class ConfigurationClassParser {
 		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass);
 		do {
+			// 真正干活的....
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass);
-		}
-		while (sourceClass != null);
+
+		} while (sourceClass != null);
 
 		this.configurationClasses.put(configClass, configClass);
 	}
@@ -265,7 +267,7 @@ class ConfigurationClassParser {
 		// Recursively process any member (nested) classes first
 		processMemberClasses(configClass, sourceClass);
 
-		// Process any @PropertySource annotations
+		// 处理@PropertySource注解
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), PropertySources.class,
 				org.springframework.context.annotation.PropertySource.class)) {
@@ -278,13 +280,14 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// Process any @ComponentScan annotations
+		// 处理@ComponentScan注解(重要!!!)
+		// 解析为ComponentScan类型的AnnotationAttributes
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
 		if (!componentScans.isEmpty() &&
 				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
 			for (AnnotationAttributes componentScan : componentScans) {
-				// The config class is annotated with @ComponentScan -> perform the scan immediately
+				// 返回扫描到的BeanDefinition信息：这里就对标注的 @Controller @Service 等注解的类进行了扫描
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
@@ -300,10 +303,10 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// Process any @Import annotations
+		// 处理@Import注解
 		processImports(configClass, sourceClass, getImports(sourceClass), true);
 
-		// Process any @ImportResource annotations
+		// 处理@ImportResource注解(用的不多忽略)
 		AnnotationAttributes importResource =
 				AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
 		if (importResource != null) {
@@ -510,6 +513,7 @@ class ConfigurationClassParser {
 	private Set<SourceClass> getImports(SourceClass sourceClass) throws IOException {
 		Set<SourceClass> imports = new LinkedHashSet<>();
 		Set<SourceClass> visited = new LinkedHashSet<>();
+		// 递归操作
 		collectImports(sourceClass, imports, visited);
 		return imports;
 	}
@@ -598,8 +602,7 @@ class ConfigurationClassParser {
 
 		if (checkForCircularImports && isChainedImportOnStack(configClass)) {
 			this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
-		}
-		else {
+		} else {
 			this.importStack.push(configClass);
 			try {
 				for (SourceClass candidate : importCandidates) {
@@ -607,19 +610,18 @@ class ConfigurationClassParser {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
 						Class<?> candidateClass = candidate.loadClass();
 						ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
-						ParserStrategyUtils.invokeAwareMethods(
-								selector, this.environment, this.resourceLoader, this.registry);
+						ParserStrategyUtils.invokeAwareMethods(selector, this.environment, this.resourceLoader, this.registry);
+						// Spring Boot自动注入通过DeferredImportSelector进行
 						if (this.deferredImportSelectors != null && selector instanceof DeferredImportSelector) {
 							this.deferredImportSelectors.add(
 									new DeferredImportSelectorHolder(configClass, (DeferredImportSelector) selector));
-						}
-						else {
+
+						} else {
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames);
 							processImports(configClass, currentSourceClass, importSourceClasses, false);
 						}
-					}
-					else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
+					} else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
 						// Candidate class is an ImportBeanDefinitionRegistrar ->
 						// delegate to it to register additional bean definitions
 						Class<?> candidateClass = candidate.loadClass();

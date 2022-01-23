@@ -4,7 +4,9 @@
  * Copyright 2021 fenbi.com. All rights reserved.
  * FENBI.COM PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
  */
-package com.nano;
+package com.nano.test;
+
+import org.springframework.stereotype.Controller;
 
 /**
  *

@@ -138,14 +138,16 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
 
-		// 遍历所有监听器
+		// 遍历所有事件监听器
 		for (final ApplicationListener<?> listener : getApplicationListeners(event, type)) {
+			// 支持异步发送事件
 			Executor executor = getTaskExecutor();
 			if (executor != null) {
 				executor.execute(() -> invokeListener(listener, event));
 			}
+			// 同步发送事件
 			else {
-				// 回调Listener的onApplicationEvent方法，将事件发送给各个监听器
+				// 回调Listener的onApplicationEvent方法，将事件发送给各个事件监听器
 				invokeListener(listener, event);
 			}
 		}

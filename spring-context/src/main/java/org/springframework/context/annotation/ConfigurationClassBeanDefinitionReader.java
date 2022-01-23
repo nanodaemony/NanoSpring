@@ -115,6 +115,7 @@ class ConfigurationClassBeanDefinitionReader {
 	public void loadBeanDefinitions(Set<ConfigurationClass> configurationModel) {
 		TrackedConditionEvaluator trackedConditionEvaluator = new TrackedConditionEvaluator();
 		for (ConfigurationClass configClass : configurationModel) {
+			// 为配置类加载BeanDefinition
 			loadBeanDefinitionsForConfigurationClass(configClass, trackedConditionEvaluator);
 		}
 	}
@@ -135,10 +136,14 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 判断是不是通过import导入的
+		// 将@Import注解中配置的类的BeanDefinition注册到容器中!!!
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		// 看看有没有beanMethod
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+			// 重要!!! 将@Bean注解配置的BeanDefinition注册到容器中!!!
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
@@ -173,6 +178,7 @@ class ConfigurationClassBeanDefinitionReader {
 	 * with the BeanDefinitionRegistry based on its contents.
 	 */
 	private void loadBeanDefinitionsForBeanMethod(BeanMethod beanMethod) {
+		// 获取配置类
 		ConfigurationClass configClass = beanMethod.getConfigurationClass();
 		MethodMetadata metadata = beanMethod.getMetadata();
 		String methodName = metadata.getMethodName();
@@ -186,14 +192,15 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 这里解析配置类中配置的@Bean的注解的各种信息
 		AnnotationAttributes bean = AnnotationConfigUtils.attributesFor(metadata, Bean.class);
 		Assert.state(bean != null, "No @Bean annotation attributes");
 
-		// Consider name and any aliases
+		// beanName与别名相关
 		List<String> names = new ArrayList<>(Arrays.asList(bean.getStringArray("name")));
 		String beanName = (!names.isEmpty() ? names.remove(0) : methodName);
 
-		// Register aliases even when overridden
+		// 注册Bean的别名
 		for (String alias : names) {
 			this.registry.registerAlias(beanName, alias);
 		}
@@ -208,6 +215,7 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 初始化一个：配置类中定义类的BeanDefinition
 		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata);
 		beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
 
@@ -215,8 +223,7 @@ class ConfigurationClassBeanDefinitionReader {
 			// static @Bean method
 			beanDef.setBeanClassName(configClass.getMetadata().getClassName());
 			beanDef.setFactoryMethodName(methodName);
-		}
-		else {
+		} else {
 			// instance @Bean method
 			beanDef.setFactoryBeanName(configClass.getBeanName());
 			beanDef.setUniqueFactoryMethodName(methodName);
@@ -226,20 +233,23 @@ class ConfigurationClassBeanDefinitionReader {
 
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(beanDef, metadata);
 
+		// 获取@Bean中配置的各种属性
 		Autowire autowire = bean.getEnum("autowire");
 		if (autowire.isAutowire()) {
 			beanDef.setAutowireMode(autowire.value());
 		}
 
+		// 获取配置的初始化方法
 		String initMethodName = bean.getString("initMethod");
 		if (StringUtils.hasText(initMethodName)) {
 			beanDef.setInitMethodName(initMethodName);
 		}
 
+		// 获取配置的销毁方法
 		String destroyMethodName = bean.getString("destroyMethod");
 		beanDef.setDestroyMethodName(destroyMethodName);
 
-		// Consider scoping
+		// 设置Scope
 		ScopedProxyMode proxyMode = ScopedProxyMode.NO;
 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(metadata, Scope.class);
 		if (attributes != null) {
@@ -264,6 +274,8 @@ class ConfigurationClassBeanDefinitionReader {
 			logger.debug(String.format("Registering bean definition for @Bean method %s.%s()",
 					configClass.getMetadata().getClassName(), beanName));
 		}
+
+		// 最后将配置类中的@Bean注解的BeanDefinition进行注册
 		this.registry.registerBeanDefinition(beanName, beanDefToRegister);
 	}
 

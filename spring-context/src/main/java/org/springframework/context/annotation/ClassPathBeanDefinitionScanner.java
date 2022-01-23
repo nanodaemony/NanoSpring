@@ -82,6 +82,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * of a {@code BeanDefinitionRegistry}
 	 */
 	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry) {
+		// 进去(使用默认Filter)
 		this(registry, true);
 	}
 
@@ -110,6 +111,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @see #setEnvironment
 	 */
 	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry, boolean useDefaultFilters) {
+		// 进去
 		this(registry, useDefaultFilters, getOrCreateEnvironment(registry));
 	}
 
@@ -162,10 +164,15 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
+		// 使用默认Filter
 		if (useDefaultFilters) {
+
+			// 重要: 注册默认的Filter!!!进去!!!
 			registerDefaultFilters();
 		}
+		// 设置环境
 		setEnvironment(environment);
+		// 设置资源加载器
 		setResourceLoader(resourceLoader);
 	}
 
@@ -270,12 +277,17 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+
+		// 存储扫描到的BeanDefinition
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
+			// 找到候选的组件
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
+				// 解析并设置Bean的scope
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
+				// 生成beanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 				if (candidate instanceof AbstractBeanDefinition) {
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
@@ -284,10 +296,12 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
 				if (checkCandidate(beanName, candidate)) {
+					// 为候选BeanDefinition生成BeanDefinitionHolder
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+					// !!!注册BeanDefinition(这里就将 扫描后的beanDefinition注册到容器中 比如 @Controller @Service 等标注的类)
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}

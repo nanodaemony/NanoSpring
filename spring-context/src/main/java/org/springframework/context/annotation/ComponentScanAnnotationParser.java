@@ -72,11 +72,19 @@ class ComponentScanAnnotationParser {
 		this.registry = registry;
 	}
 
-
+	/**
+	 * 解析传入的componentScan注解
+	 * @param componentScan
+	 * @param declaringClass
+	 * @return
+	 */
 	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+
+		// 初始化一个扫描器
 		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
 				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
+		// 下面基本都是把componentScan里面的属性取出来给扫描器
 		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
 		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
 		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
@@ -129,6 +137,8 @@ class ComponentScanAnnotationParser {
 				return declaringClass.equals(className);
 			}
 		});
+
+		// 真正扫描干活的
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 

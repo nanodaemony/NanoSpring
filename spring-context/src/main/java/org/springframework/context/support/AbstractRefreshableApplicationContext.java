@@ -120,8 +120,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
 
-		// 如果本ApplicationContext中已经加载过BeanFactory了，销毁所有Bean，关闭BeanFactory
-		// 注意：应用中BeanFactory本来就是可以多个的，这里可不是说应用全局是否有BeanFactory，而是当前ApplicationContext是否有BeanFactory
+		// 1.如果当前ApplicationContext中已经加载过BeanFactory了，销毁所有Bean，关闭BeanFactory
+		// 注意：应用中BeanFactory本来就是可以多个的，这里不是说应用全局是否有BeanFactory，而是当前ApplicationContext是否有BeanFactory
 		if (hasBeanFactory()) {
 			// 销毁已经存在的bean
 			destroyBeans();
@@ -130,19 +130,17 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 
 		} try {
 
-			// 初始化一个DefaultListableBeanFactory!!!!
-			// DefaultListableBeanFactory是一个非常全的BeanFactory实例，后面的操作都是委托其进行的
+			// 2.初始化一个新的BeanFactory
+			// 实现类是DefaultListableBeanFactory!!!!它是一个非常全的BeanFactory实例，后面的操作都是委托其进行的
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			// 用于BeanFactory的序列化
 			beanFactory.setSerializationId(getId());
 
-			// 下面这两个方法很重要，别跟丢了，具体细节之后说
-			// 设置BeanFactory的两个配置属性：是否允许Bean覆盖、是否允许循环引用
+			// 3.设置BeanFactory的两个配置属性：是否允许Bean覆盖、是否允许循环引用
 			// 实现类：AbstractRefreshableApplicationContext.java
 			customizeBeanFactory(beanFactory);
 
-			// 加载Bean到BeanFactory中
-			// 实现类：AbstractXmlApplicationContext.java
+			// 4.加载BeanDefinition到BeanFactory中 看实现类：AnnotationConfigWebApplicationContext.java
 			loadBeanDefinitions(beanFactory);
 
 			// 将产生的beanFactory赋予本容器

@@ -95,19 +95,20 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 */
 	protected Object getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) {
 
-		// 如果是单例模式
+		// 1.如果是单例，并且已经存在于单例对象缓存中
 		if (factory.isSingleton() && containsSingleton(beanName)) {
 
 			synchronized (getSingletonMutex()) {
 
-				// 缓存中获取
+				// 2.从FactoryBean创建的单例对象的缓存中获取该bean实例
 				Object object = this.factoryBeanObjectCache.get(beanName);
 				if (object == null) {
-					// 缓存中没有进行生成
+					// 3.调用FactoryBean的getObject方法获取对象实例(以do开头的方法 真正干活的)
 					object = doGetObjectFromFactoryBean(factory, beanName);
 					// Only post-process and store if not put there already during getObject() call above
 					// (e.g. because of circular reference processing triggered by custom getBean calls)
 					Object alreadyThere = this.factoryBeanObjectCache.get(beanName);
+					// 4.如果该beanName已经在缓存中存在，则将object替换成缓存中的
 					if (alreadyThere != null) {
 						object = alreadyThere;
 					}
@@ -119,37 +120,38 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 							}
 							beforeSingletonCreation(beanName);
 							try {
+								// 5.对bean实例进行后置处理，执行所有已注册的BeanPostProcessor的postProcessAfterInitialization方法
 								// 调用ObjectFactory的后处理器
 								object = postProcessObjectFromFactoryBean(object, beanName);
-							}
-							catch (Throwable ex) {
+							} catch (Throwable ex) {
 								throw new BeanCreationException(beanName,
 										"Post-processing of FactoryBean's singleton object failed", ex);
-							}
-							finally {
+							} finally {
 								afterSingletonCreation(beanName);
 							}
 						}
 						if (containsSingleton(beanName)) {
-							// 新生成的放入缓存
+							// 6.将beanName和object放到factoryBeanObjectCache缓存中
 							this.factoryBeanObjectCache.put(beanName, object);
 						}
 					}
 				}
+				// 7.返回object对象实例
 				return object;
 			}
-		}
-		else {
+		} else {
+			// 8.调用FactoryBean的getObject方法获取对象实例
 			Object object = doGetObjectFromFactoryBean(factory, beanName);
 			if (shouldPostProcess) {
 				try {
-					// 调用ObjectFactory的后处理器
+					// 9.对bean实例进行后置处理，执行所有已注册的BeanPostProcessor的postProcessAfterInitialization方法
 					object = postProcessObjectFromFactoryBean(object, beanName);
 				}
 				catch (Throwable ex) {
 					throw new BeanCreationException(beanName, "Post-processing of FactoryBean's object failed", ex);
 				}
 			}
+			// 10.返回object对象实例
 			return object;
 		}
 	}
@@ -165,30 +167,24 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	private Object doGetObjectFromFactoryBean(FactoryBean<?> factory, String beanName) throws BeanCreationException {
 		Object object;
 		try {
-			// 需要权限验证
+			// 1.这里调用getObject()方法!!!!这个方法是 FactoryBean 接口中的方法，子类覆写后就通过这个方法返回bean实例
 			if (System.getSecurityManager() != null) {
 				AccessControlContext acc = getAccessControlContext();
 				try {
 					object = AccessController.doPrivileged((PrivilegedExceptionAction<Object>) factory::getObject, acc);
-				}
-				catch (PrivilegedActionException pae) {
+				} catch (PrivilegedActionException pae) {
 					throw pae.getException();
 				}
-			}
-			else {
-				// 直接调用getObject方法!!!!这个方法是 FactoryBean 接口中的方法
+			} else {
 				object = factory.getObject();
 			}
-		}
-		catch (FactoryBeanNotInitializedException ex) {
+		} catch (FactoryBeanNotInitializedException ex) {
 			throw new BeanCurrentlyInCreationException(beanName, ex.toString());
-		}
-		catch (Throwable ex) {
+		} catch (Throwable ex) {
 			throw new BeanCreationException(beanName, "FactoryBean threw exception on object creation", ex);
 		}
 
-		// Do not accept a null value for a FactoryBean that's not fully
-		// initialized yet: Many FactoryBeans just return null then.
+		// 2.getObject返回的是空值，并且该FactoryBean正在初始化中，则直接抛异常，不接受一个尚未完全初始化的FactoryBean的getObject返回的空值
 		if (object == null) {
 			if (isSingletonCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(
@@ -196,6 +192,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 			}
 			object = new NullBean();
 		}
+		// 3.返回创建好的bean
 		return object;
 	}
 

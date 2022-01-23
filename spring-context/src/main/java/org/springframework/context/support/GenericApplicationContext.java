@@ -107,6 +107,8 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 * @see #refresh
 	 */
 	public GenericApplicationContext() {
+		// 调用默认构造方法
+		// DefaultListableBeanFactory是各种接口的实现类，功能齐全
 		this.beanFactory = new DefaultListableBeanFactory();
 	}
 

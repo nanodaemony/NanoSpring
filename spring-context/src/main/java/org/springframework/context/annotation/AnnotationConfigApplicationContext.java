@@ -52,17 +52,23 @@ import org.springframework.util.Assert;
  */
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 
+	/** 注解方式Bean定义读取器 */
 	private final AnnotatedBeanDefinitionReader reader;
 
+	/** 类路径Bean定义扫描器 */
 	private final ClassPathBeanDefinitionScanner scanner;
 
-
-	/**
-	 * Create a new AnnotationConfigApplicationContext that needs to be populated
-	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
-	 */
+	/** 容器构造器 */
 	public AnnotationConfigApplicationContext() {
+
+		// 本类继承了GenericApplicationContext, 这里首先进行父类初始化
+		// 这里父类用 DefaultListableBeanFactory 实例化了一个BeanFactory!!!!
+
+		// BeanDefinition读取器
 		this.reader = new AnnotatedBeanDefinitionReader(this);
+
+		// 初始化一个根据路径进行包扫描的Scanner!!!
+		// 指定了默认的扫描策略 扫描 @Component 相关的类!
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
@@ -83,8 +89,11 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * e.g. {@link Configuration @Configuration} classes
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
+		// 构造器: (1)注册了内部用到的各种处理器的BeanDefinition; (2)配置了默认的包扫描策略;
 		this();
+		// 往容器中注册传入的配置类
 		register(annotatedClasses);
+		// 极其重要.......
 		refresh();
 	}
 
@@ -154,6 +163,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public void register(Class<?>... annotatedClasses) {
 		Assert.notEmpty(annotatedClasses, "At least one annotated class must be specified");
+		// 点进去
 		this.reader.register(annotatedClasses);
 	}
 

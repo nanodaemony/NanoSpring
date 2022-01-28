@@ -937,12 +937,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 		// Clear context-level resource caches (such as ASM metadata from scanning).
 		clearResourceCaches();
 
-		// Initialize lifecycle processor for this context.
+		// 1.为此上下文初始化生命周期处理器
 		initLifecycleProcessor();
 
+		// 2.首先将刷新完毕事件传播到生命周期处理器（触发isAutoStartup方法返回true的SmartLifecycle的start方法）
 		// 启动所有实现了Lifecycle接口的bean
 		getLifecycleProcessor().onRefresh();
 
+		// 3.推送上下文刷新完毕事件到相应的监听器
 		// 最后发布容器启动完成的事件(调用事件广播器进行事件广播)
 		publishEvent(new ContextRefreshedEvent(this));
 

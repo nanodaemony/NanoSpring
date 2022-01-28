@@ -15,4 +15,6 @@ package com.nano.service;
  */
 public interface LoginService {
 
+    boolean userLogin(int userId);
+
 }

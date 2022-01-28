@@ -12,4 +12,6 @@ repositories {
 dependencies {
     api(project(":spring-context"))
     testImplementation 'junit:junit:4.12'
+    // https://mvnrepository.com/artifact/org.aspectj/aspectjrt
+    implementation group: 'org.aspectj', name: 'aspectjrt', version: '1.9.6'
 }

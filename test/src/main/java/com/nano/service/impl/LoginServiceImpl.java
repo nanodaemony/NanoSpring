@@ -19,4 +19,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class LoginServiceImpl implements LoginService {
 
+    @Override
+    public boolean userLogin(int userId) {
+        System.out.println("User login now: " + userId);
+        return true;
+    }
 }

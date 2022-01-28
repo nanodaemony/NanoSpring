@@ -162,21 +162,27 @@ class CglibAopProxy implements AopProxy, Serializable {
 		}
 
 		try {
+			// 1.拿到要代理目标类
 			Class<?> rootClass = this.advised.getTargetClass();
 			Assert.state(rootClass != null, "Target class must be available for creating a CGLIB proxy");
 
+			// proxySuperClass默认为rootClass
 			Class<?> proxySuperClass = rootClass;
 			if (ClassUtils.isCglibProxyClass(rootClass)) {
+				// 如果rootClass是被Cglib代理过的，获取rootClass的父类作为proxySuperClass
 				proxySuperClass = rootClass.getSuperclass();
 				Class<?>[] additionalInterfaces = rootClass.getInterfaces();
 				for (Class<?> additionalInterface : additionalInterfaces) {
+					// 将父类的接口也添加到advised的interfaces属性
 					this.advised.addInterface(additionalInterface);
 				}
 			}
 
+			// 2.校验proxySuperClass，主要是校验方法是否用final修饰、跨ClassLoader的包可见方法，如果有将警告写入日志
 			// Validate the class, writing log messages as necessary.
 			validateClassIfNecessary(proxySuperClass, classLoader);
 
+			// 3.创建和配置Cglib Enhancer
 			// Configure CGLIB Enhancer...
 			Enhancer enhancer = createEnhancer();
 			if (classLoader != null) {
@@ -186,30 +192,34 @@ class CglibAopProxy implements AopProxy, Serializable {
 					enhancer.setUseCache(false);
 				}
 			}
+			// superclass为被代理的目标类proxySuperClass，通过名字可以看出，生成的代理类实际上是继承了被代理类
 			enhancer.setSuperclass(proxySuperClass);
 			enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(this.advised));
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 			enhancer.setStrategy(new ClassLoaderAwareUndeclaredThrowableStrategy(classLoader));
 
+			// 4.获取所有要回调的拦截器
 			Callback[] callbacks = getCallbacks(rootClass);
 			Class<?>[] types = new Class<?>[callbacks.length];
 			for (int x = 0; x < types.length; x++) {
 				types[x] = callbacks[x].getClass();
 			}
+
 			// fixedInterceptorMap only populated at this point, after getCallbacks call above
+			// 在上面调用getCallbacks之后，此时仅填充fixedInterceptorMap
 			enhancer.setCallbackFilter(new ProxyCallbackFilter(
 					this.advised.getConfigurationOnlyCopy(), this.fixedInterceptorMap, this.fixedInterceptorOffset));
 			enhancer.setCallbackTypes(types);
 
+			// 5.生成代理类并创建代理实例，返回代理实例
 			// Generate the proxy class and create a proxy instance.
 			return createProxyClassAndInstance(enhancer, callbacks);
-		}
-		catch (CodeGenerationException | IllegalArgumentException ex) {
+
+		} catch (CodeGenerationException | IllegalArgumentException ex) {
 			throw new AopConfigException("Could not generate CGLIB subclass of " + this.advised.getTargetClass() +
 					": Common causes of this problem include using a final class or a non-visible class",
 					ex);
-		}
-		catch (Throwable ex) {
+		} catch (Throwable ex) {
 			// TargetSource.getTarget() failed
 			throw new AopConfigException("Unexpected AOP exception", ex);
 		}
@@ -279,11 +289,14 @@ class CglibAopProxy implements AopProxy, Serializable {
 	}
 
 	private Callback[] getCallbacks(Class<?> rootClass) throws Exception {
+		// 1.用于优化选择的参数
 		// Parameters used for optimization choices...
 		boolean exposeProxy = this.advised.isExposeProxy();
 		boolean isFrozen = this.advised.isFrozen();
 		boolean isStatic = this.advised.getTargetSource().isStatic();
 
+		// 2.使用AdvisedSupport作为参数，创建一个DynamicAdvisedInterceptor（“aop”拦截器，用于AOP调用）
+		// this.advised就是之前创建CglibAopProxy时传进来的ProxyFactory(ProxyCreatorSupport子类)
 		// Choose an "aop" interceptor (used for AOP calls).
 		Callback aopInterceptor = new DynamicAdvisedInterceptor(this.advised);
 
@@ -306,13 +319,14 @@ class CglibAopProxy implements AopProxy, Serializable {
 		Callback targetDispatcher = (isStatic ?
 				new StaticDispatcher(this.advised.getTargetSource().getTarget()) : new SerializableNoOp());
 
+		// 3.将aop拦截器添加到mainCallbacks中
 		Callback[] mainCallbacks = new Callback[] {
-				aopInterceptor,  // for normal advice
+				aopInterceptor,  // for normal advice aop拦截器，因此当代理类被执行时，会走到该拦截器中
 				targetInterceptor,  // invoke target without considering advice, if optimized
 				new SerializableNoOp(),  // no override for methods mapped to this
 				targetDispatcher, this.advisedDispatcher,
-				new EqualsInterceptor(this.advised),
-				new HashCodeInterceptor(this.advised)
+				new EqualsInterceptor(this.advised),	// 针对equals方法的拦截器
+				new HashCodeInterceptor(this.advised)	// 针对hashcode方法的拦截器
 		};
 
 		Callback[] callbacks;

@@ -6,6 +6,7 @@
  */
 package com.nano.aop;
 
+import com.alibaba.fastjson.JSON;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
@@ -40,16 +41,17 @@ public class NanoAspect {
     }
 
     @Around("pointcut()")
-    public Object around(ProceedingJoinPoint proceedingJoinPoint) throws InterruptedException {
-        System.out.println("around advice start");
+    public Object around(ProceedingJoinPoint pjp) throws Throwable {
+        Object[] args = pjp.getArgs();
         try {
-            Object result = proceedingJoinPoint.proceed();
-            System.out.println("result: " + result);
-            System.out.println("around advice end");
+            System.out.println("入参 = " + JSON.toJSONString(args));
+            long start = System.currentTimeMillis();
+            Object result = pjp.proceed();
+            System.out.println("耗时 = " + (System.currentTimeMillis() - start));
+            System.out.println("回参 = " + JSON.toJSONString(result));
             return result;
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-            return null;
+        } catch (Exception e) {
+            return "";
         }
     }
 

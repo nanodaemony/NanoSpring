@@ -505,62 +505,57 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 
-		// 加个锁 防止 refresh() 还没结束就又来个启动或者销毁容器的操作
+		// 加锁 防止refresh()还没结束又来个启动或销毁容器的操作
 		synchronized (this.startupShutdownMonitor) {
 
-			// 准备工作 记录下容器的启动时间、标记"已启动"状态、处理配置文件中的占位符,对系统属性与环境变量进行准备与验证
+			// 1.准备工作
+			// 记录容器的启动时间、标记"已启动"状态、处理配置文件中的占位符,对系统属性与环境变量进行准备与验证
 			prepareRefresh();
 
-			// 初始化BeanFactory 进行XML配置文件的读取
-			// 这步比较关键，这步完成后，配置文件就会解析成一个个BeanDefinition，注册到BeanFactory中，
-			// 当然这里说的Bean还没有初始化，只是配置信息都提取出来了，注册也只是将这些信息都保存
-			// 到了注册中心中(说到底核心是一个beanName -> beanDefinition的map)
-			// 这一步后，ApplicationContext已经包含了BeanFactory所提供的功能
+			// 2(重点).初始化BeanFactory
+			// 这步完成后，配置文件就会解析成一个个BeanDefinition，注册到BeanFactory中，
+			// 这里Bean还没有初始化，只是配置信息都提取出来了，注册也只是将这些信息都保存
+			// 到了注册中心中(其核心是一个beanName -> beanDefinition的map)
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
-			// 设置BeanFactory的类加载器，添加几个BeanPostProcessor，手动注册几个特殊的bean
-			// 上一步是把XML配置文件中的Bean进行注册，这里是手动注册一些特殊的Bean
-			// 对BeanFactory进行各种功能填充
-			// 比如@Qualifier与@Autowired等注解就是在这步中支持的
+			// 3.设置BeanFactory的类加载器，添加几个BeanPostProcessor，硬编码注册几个特殊的bean
+			// 对BeanFactory进行各种功能填充，比如@Qualifier与@Autowired等注解就是在这步中支持的
 			prepareBeanFactory(beanFactory);
 
 			try {
-				// 需要知道BeanFactoryPostProcessor这个知识点，Bean如果实现了此接口，
-				// 那么在容器初始化以后，Spring会负责调用里面的postProcessBeanFactory方法。
-				// 这里是提供给子类的扩展点，到这里的时候，所有的Bean都加载、注册完成了，但是都还没有初始化
+				// 4.如果Bean实现了BeanFactoryPostProcessor接口，在容器初始化以后，
+				// 会调用接口的postProcessBeanFactory方法。这里是提供给子类的扩展点，到这里的时候，
+				// 所有的Bean都加载、注册完成了，但是都还没有初始化
 				// 具体的子类可以在这步的时候添加一些特殊的BeanFactoryPostProcessor的实现类或做点什么事
 				// 子类覆盖方法做额外的处理
 				postProcessBeanFactory(beanFactory);
 
-				// 调用BeanFactoryPostProcessor各个实现类的postProcessBeanFactory(factory)方法
+				// 5(重点).调用BeanFactoryPostProcessor接口各个实现类的postProcessBeanFactory(factory)方法
 				// 调用各种BeanFactory处理器
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// 注册BeanPostProcessor的实现类，注意与BeanFactoryPostProcessor的区别
-				// 此接口两个方法: postProcessBeforeInitialization和postProcessAfterInitialization
-				// 两个方法分别在Bean初始化之前和初始化之后得到执行。注意，到这里Bean还没初始化
-				// 注册拦截Bean创建的Bean处理器，这里只是注册，真正的调用是在getBean进行实例化的时候
+				// 6(重点).注册BeanPostProcessor接口的实现类(注意与BeanFactoryPostProcessor接口的区别)
+				// 此接口两个方法: postProcessBeforeInitialization()和postProcessAfterInitialization()
+				// 这两个方法分别在Bean初始化之前和初始化之后得到执行。注意这里仅仅是注册了后处理器，
+				// 真正的调用是在getBean进行实例化的时候，这里bean还没初始化
 				registerBeanPostProcessors(beanFactory);
 
-				// 初始化当前ApplicationContext的MessageSource，国际化处理
+				// 7.初始化当前容器的MessageSource国际化处理
 				initMessageSource();
 
-				// 初始化并往容器加入一个ApplicationContext的事件广播器(事件多播)
+				// 8.初始化并往容器加入一个ApplicationContext的事件广播器(事件多播器)
 				initApplicationEventMulticaster();
 
-				// 从方法名就可以知道，典型的模板方法(钩子方法)，
-				// 留给子类来初始化其他的Bean
-				// 具体的子类可以在这里初始化一些特殊的Bean（在初始化singleton beans之前）
+				// 9.典型的模板方法(构造方法)，子类可以在初始化单例beans之前来初始化一些特殊Bean
 				onRefresh();
 
-				// 注册事件监听器到事件多播器上(监听器需要实现ApplicationListener接口)
+				// 10.注册事件监听器到事件多播器上(监听器需实现ApplicationListener接口)
 				registerListeners();
 
-				// (重点重点重点)：初始化所有的Singleton Beans（lazy-init 的除外）
-				// 初始化剩余的 singleton beans
+				// 11(重点重点)：初始化剩下所有的单例的beans(配置了lazy-init的除外)
 				finishBeanFactoryInitialization(beanFactory);
 
-				// 最后广播事件，ApplicationContext初始化完成
+				// 12.广播事件，ApplicationContext初始化完成
 				finishRefresh();
 
 			} catch (BeansException ex) {
@@ -569,7 +564,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 							"cancelling refresh attempt: " + ex);
 				}
 
-				// 销毁已经初始化的singleton的Beans，以免有些bean会一直占用资源
+				// 销毁已经初始化的单例Beans，以免有些bean会一直占用资源
 				destroyBeans();
 
 				// 重置active标志位
@@ -579,8 +574,6 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				throw ex;
 
 			} finally {
-				// Reset common introspection caches in Spring's core, since we
-				// might not ever need metadata for singleton beans anymore...
 				resetCommonCaches();
 			}
 		}
@@ -636,9 +629,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
 
-		// 关闭旧的BeanFactory(如果有)，创建新的BeanFactory，加载Bean定义、注册Bean等等!!
-		// 实现类：GenericApplicationContext
-		// 主要逻辑!!!
+		// 如果有则关闭旧的BeanFactory，创建新的BeanFactory，加载Bean定义、注册Bean等等
+		// 实现类为GenericApplicationContext
 		refreshBeanFactory();
 
 		// 返回刚刚创建的BeanFactory
@@ -924,7 +916,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 		// 肯定不希望这个时候还出现 bean 定义解析、加载、注册。
 		beanFactory.freezeConfiguration();
 
-		// 5.重点：实例化全部剩下的singletons(lazy-init的除外)!!!!
+		// 5.最后的重点：实例化全部剩下的singletons(lazy-init的除外)!!!!
 		beanFactory.preInstantiateSingletons();
 	}
 

@@ -581,6 +581,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 			// 8.用于解决循环依赖。提前暴露一个单例工厂方法 使其他的bean能引用到该bean
 			// 这里提前曝光beanName的ObjectFactory，即在bean初始化完成前将创建实例的ObjectFactory加入工厂
+			// 这里将早期bean存入到三级缓存中singletonFactories
 			addSingletonFactory(beanName,
 								// 8.1.(AOP相关)主要应用SmartInstantiationAwareBeanPostProcessor
 								// 允许返回指定bean的早期引用，AOP就是在这里将advice动态织入bean中，
@@ -945,6 +946,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
 					// 3.允许SmartInstantiationAwareBeanPostProcessor返回指定bean的早期引用
+					// // 如果需要代理，这里会返回代理对象；否则返回原始对象
 					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
 				}
 			}
@@ -1086,7 +1088,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
 
-					// 3.实例化前的后置处理器应用(处理InstantiationAwareBeanPostProcessor)
+					// 3.实例化前调用InstantiationAwareBeanPostProcessor接口的postProcessBeforeInstantiation()方法
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
 					if (bean != null) {
 						// 4.如果返回的bean不为空，会跳过Spring默认的实例化过程，
@@ -1457,6 +1459,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// 8.将所有PropertyValues中的属性填充到bean中
 		if (pvs != null) {
+			// 可以康康
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
 	}
@@ -1537,8 +1540,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					}
 					autowiredBeanNames.clear();
 				}
-			}
-			catch (BeansException ex) {
+			} catch (BeansException ex) {
 				throw new UnsatisfiedDependencyException(mbd.getResourceDescription(), beanName, propertyName, ex);
 			}
 		}
@@ -1693,6 +1695,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (converter == null) {
 			converter = bw;
 		}
+
+		// 这里要进行解析
 		BeanDefinitionValueResolver valueResolver = new BeanDefinitionValueResolver(this, beanName, mbd, converter);
 
 		// Create a deep copy, resolving any references for values.
@@ -1701,10 +1705,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		for (PropertyValue pv : original) {
 			if (pv.isConverted()) {
 				deepCopy.add(pv);
-			}
-			else {
+			} else {
 				String propertyName = pv.getName();
 				Object originalValue = pv.getValue();
+				// 解析出依赖关系
 				Object resolvedValue = valueResolver.resolveValueIfNecessary(pv, originalValue);
 				Object convertedValue = resolvedValue;
 				boolean convertible = bw.isWritableProperty(propertyName) &&
@@ -1739,8 +1743,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Set our (possibly massaged) deep copy.
 		try {
 			bw.setPropertyValues(new MutablePropertyValues(deepCopy));
-		}
-		catch (BeansException ex) {
+		} catch (BeansException ex) {
 			throw new BeanCreationException(
 					mbd.getResourceDescription(), beanName, "Error setting property values", ex);
 		}

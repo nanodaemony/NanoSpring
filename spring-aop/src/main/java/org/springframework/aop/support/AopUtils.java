@@ -226,6 +226,7 @@ public abstract class AopUtils {
 			return false;
 		}
 
+		// 获取方法匹配器
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
@@ -283,6 +284,7 @@ public abstract class AopUtils {
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
+		// 1.事务相关的BeanFactoryTransactionAttributeSourceAdvisor实现了PointcutAdvisor接口
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
@@ -306,7 +308,7 @@ public abstract class AopUtils {
 			return candidateAdvisors;
 		}
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
-		// 1.首先处理引介增强（@DeclareParents）用的比较少可以忽略
+		// 1.首先处理引介增强(@DeclareParents)用的比较少可以忽略
 		// 有兴趣的参考：https://www.cnblogs.com/HigginCui/p/6322283.html
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
@@ -314,14 +316,14 @@ public abstract class AopUtils {
 			}
 		}
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
-		// 2.遍历所有的candidateAdvisors
+		// 2.遍历所有的候选Advisors
 		for (Advisor candidate : candidateAdvisors) {
-			// 2.1 引介增强已经处理，直接跳过
+			// 2.1 引介增强上面已经处理，直接跳过
 			if (candidate instanceof IntroductionAdvisor) {
-				// already processed
 				continue;
 			}
-			// 2.2 正常增强处理，判断当前bean是否可以应用于当前遍历的增强器（bean是否包含在增强器的execution指定的表达式中）
+			// 2.2 正常增强处理，判断当前bean是否可以应用于当前的增强器
+			// 即bean是否包含在增强器的execution指定的表达式中
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
@@ -342,14 +344,11 @@ public abstract class AopUtils {
 	public static Object invokeJoinpointUsingReflection(@Nullable Object target, Method method, Object[] args)
 			throws Throwable {
 
-		// Use reflection to invoke the method.
 		try {
 			// 使用反射调用方法
 			ReflectionUtils.makeAccessible(method);
 			return method.invoke(target, args);
 		} catch (InvocationTargetException ex) {
-			// Invoked method threw a checked exception.
-			// We must rethrow it. The client won't see the interceptor.
 			throw ex.getTargetException();
 		} catch (IllegalArgumentException ex) {
 			throw new AopInvocationException("AOP configuration seems to be invalid: tried calling method [" +

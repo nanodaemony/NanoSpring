@@ -52,7 +52,9 @@ public class AfterReturningAdviceInterceptor implements MethodInterceptor, After
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+
 		Object retVal = mi.proceed();
+		// 这里如果前面抛异常了 返回通知就不执行了 因为这里直接把异常抛出去了!!!
 		this.advice.afterReturning(retVal, mi.getMethod(), mi.getArguments(), mi.getThis());
 		return retVal;
 	}

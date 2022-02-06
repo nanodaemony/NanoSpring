@@ -179,11 +179,9 @@ class CglibAopProxy implements AopProxy, Serializable {
 			}
 
 			// 2.校验proxySuperClass，主要是校验方法是否用final修饰、跨ClassLoader的包可见方法，如果有将警告写入日志
-			// Validate the class, writing log messages as necessary.
 			validateClassIfNecessary(proxySuperClass, classLoader);
 
 			// 3.创建和配置Cglib Enhancer
-			// Configure CGLIB Enhancer...
 			Enhancer enhancer = createEnhancer();
 			if (classLoader != null) {
 				enhancer.setClassLoader(classLoader);
@@ -205,14 +203,12 @@ class CglibAopProxy implements AopProxy, Serializable {
 				types[x] = callbacks[x].getClass();
 			}
 
-			// fixedInterceptorMap only populated at this point, after getCallbacks call above
 			// 在上面调用getCallbacks之后，此时仅填充fixedInterceptorMap
 			enhancer.setCallbackFilter(new ProxyCallbackFilter(
 					this.advised.getConfigurationOnlyCopy(), this.fixedInterceptorMap, this.fixedInterceptorOffset));
 			enhancer.setCallbackTypes(types);
 
 			// 5.生成代理类并创建代理实例，返回代理实例
-			// Generate the proxy class and create a proxy instance.
 			return createProxyClassAndInstance(enhancer, callbacks);
 
 		} catch (CodeGenerationException | IllegalArgumentException ex) {
@@ -220,7 +216,6 @@ class CglibAopProxy implements AopProxy, Serializable {
 					": Common causes of this problem include using a final class or a non-visible class",
 					ex);
 		} catch (Throwable ex) {
-			// TargetSource.getTarget() failed
 			throw new AopConfigException("Unexpected AOP exception", ex);
 		}
 	}

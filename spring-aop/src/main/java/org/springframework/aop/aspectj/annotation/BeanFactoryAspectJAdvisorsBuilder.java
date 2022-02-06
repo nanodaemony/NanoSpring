@@ -83,33 +83,31 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	public List<Advisor> buildAspectJAdvisors() {
 		List<String> aspectNames = this.aspectBeanNames;
 
-		// 1.如果aspectNames为空，则进行解析
+		// 1.如果aspectNames为null，表示没有解析过，需要进行解析
 		if (aspectNames == null) {
 			synchronized (this) {
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
+					// 初始化增强器列表
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
-					// 1.1 获取所有的beanName
+					// 1.1 获取容器中所有的beanName
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
 					// 1.2 循环遍历所有的beanName，找出对应的增强方法
 					for (String beanName : beanNames) {
 						// 1.3 不合法的beanName则跳过，默认返回true，子类可以覆盖实现，AnnotationAwareAspectJAutoProxyCreator
-						// 实现了自己的逻辑，支持使用includePatterns进行筛选
 						if (!isEligibleBean(beanName)) {
 							continue;
 						}
 
-						// 获取beanName对应的bean的类型
-						// We must be careful not to instantiate beans eagerly as in this case they
-						// would be cached by the Spring container but would not have been weaved.
+						// 获取beanName对应bean的类型
 						Class<?> beanType = this.beanFactory.getType(beanName);
 						if (beanType == null) {
 							continue;
 						}
 
-						// 1.4 如果beanType存在Aspect注解则进行处理
+						// 1.4 如果bean存在@Aspect注解(也就是切面类)则进行处理
 						if (this.advisorFactory.isAspect(beanType)) {
 							// 将存在Aspect注解的beanName添加到aspectNames列表
 							aspectNames.add(beanName);
@@ -118,13 +116,14 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 							// 获取per-clause的类型是SINGLETON
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 								// 使用BeanFactory和beanName创建一个BeanFactoryAspectInstanceFactory，主要用来创建切面对象实例
+								// 这里factory携带了切面类的信息
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
-								// 1.5 解析标记AspectJ注解中的增强方法
+
+								// 1.5 解析标记AspectJ注解中的增强方法！！！
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
-								// 1.6 放到缓存中
+								// 1.6 如果beanName是单例则直接将解析的增强方法放到缓存
 								if (this.beanFactory.isSingleton(beanName)) {
-									// 如果beanName是单例则直接将解析的增强方法放到缓存
 									this.advisorsCache.put(beanName, classAdvisors);
 								} else {
 									// 如果不是单例，则将factory放到缓存，之后可以通过factory来解析增强方法
@@ -135,9 +134,8 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 
 							} else {
 								// 如果per-clause的类型不是SINGLETON
-								// Per target or per this.
 								if (this.beanFactory.isSingleton(beanName)) {
-									// 名称为beanName的Bean是单例，但切面实例化模型不是单例，则抛异常
+									// 名称为beanName的Bean是单例但切面实例化模型不是单例，则抛异常
 									throw new IllegalArgumentException("Bean with name '" + beanName +
 											"' is a singleton, but aspect instantiation model is not singleton");
 								}
@@ -159,7 +157,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 		}
 
 		// 2.如果aspectNames不为null，则代表已经解析过了，则无需再次解析
-		// 2.1 如果aspectNames是空列表，则返回一个空列表。空列表也是解析过的，只要不是null都是解析过的。
+		// 2.1 如果aspectNames是空列表，则返回一个空列表。空列表也是解析过的，只要不是null都是解析过的
 		if (aspectNames.isEmpty()) {
 			return Collections.emptyList();
 		}

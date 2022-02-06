@@ -35,6 +35,9 @@ import org.springframework.transaction.config.TransactionManagementConfigUtils;
 public class TransactionManagementConfigurationSelector extends AdviceModeImportSelector<EnableTransactionManagement> {
 
 	/**
+	 * 往容器中添加组件
+	 * 1) AutoProxyRegistrar
+	 * 2) ProxyTransactionManagementConfiguration
 	 * Returns {@link ProxyTransactionManagementConfiguration} or
 	 * {@code AspectJTransactionManagementConfiguration} for {@code PROXY}
 	 * and {@code ASPECTJ} values of {@link EnableTransactionManagement#mode()},
@@ -43,6 +46,7 @@ public class TransactionManagementConfigurationSelector extends AdviceModeImport
 	@Override
 	protected String[] selectImports(AdviceMode adviceMode) {
 		switch (adviceMode) {
+			// 配置的默认模式是PROXY
 			case PROXY:
 				return new String[] {AutoProxyRegistrar.class.getName(),
 						ProxyTransactionManagementConfiguration.class.getName()};

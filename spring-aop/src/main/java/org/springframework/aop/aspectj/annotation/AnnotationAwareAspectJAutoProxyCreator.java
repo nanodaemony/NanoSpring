@@ -75,12 +75,20 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
 	}
 
+	/**
+	 * 覆写了父类方法
+	 * 创建一个AOP的增强器通过@Apsectj注解的方式
+	 * @param beanFactory
+	 */
 	@Override
 	protected void initBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		// 调用父类方法
 		super.initBeanFactory(beanFactory);
+		// 若Aspectj的增强器工厂对象为空,就创建一个ReflectiveAspectJAdvisorFactory
 		if (this.aspectJAdvisorFactory == null) {
 			this.aspectJAdvisorFactory = new ReflectiveAspectJAdvisorFactory(beanFactory);
 		}
+		// 把aspectJAdvisorFactory包装为BeanFactoryAspectJAdvisorsBuilderAdapter
 		this.aspectJAdvisorsBuilder =
 				new BeanFactoryAspectJAdvisorsBuilderAdapter(beanFactory, this.aspectJAdvisorFactory);
 	}
@@ -88,7 +96,7 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 
 	@Override
 	protected List<Advisor> findCandidateAdvisors() {
-		// 1.添加根据父类规则找到的所有advisor
+		// 1.添加根据父类规则找到的所有advisor(主要是找事务的增强器切面)
 		List<Advisor> advisors = super.findCandidateAdvisors();
 		// 2.为bean工厂中的所有AspectJ方面构建advisor
 		if (this.aspectJAdvisorsBuilder != null) {

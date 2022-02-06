@@ -5,6 +5,8 @@ package com.nano; /**
  * FENBI.COM PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
  */
 
+import com.nano.aop.Calculate;
+import com.nano.aop.NanoCalculate;
 import com.nano.event.NanoEvent;
 import com.nano.config.NanoConfig;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -25,7 +27,8 @@ public class NanoTest {
 //
 		context.getBean("book");
 
-		System.out.println("*****");
+		Calculate calculate = (Calculate) context.getBean("nanoCalculate");
+		calculate.add(1, 2);
 		// 手动发布一个事件
 		context.publishEvent(new NanoEvent("Publish nano event...."));
 		try {

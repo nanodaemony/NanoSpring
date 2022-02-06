@@ -89,7 +89,7 @@ class InstantiationModelAwarePointcutAdvisorImpl
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
 		this.methodName = aspectJAdviceMethod.getName();
 		this.parameterTypes = aspectJAdviceMethod.getParameterTypes();
-		// aspectJAdviceMethod保存的是用来进行逻辑增强的方法（@Around、@After等修饰的方法）
+		// aspectJAdviceMethod保存的是用来进行逻辑增强的方法(@Around、@After等修饰的方法)
 		this.aspectJAdviceMethod = aspectJAdviceMethod;
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
 		this.aspectInstanceFactory = aspectInstanceFactory;
@@ -98,22 +98,16 @@ class InstantiationModelAwarePointcutAdvisorImpl
 
 		// 2.是否需要延迟实例化
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
-			// Static part of the pointcut is a lazy type.
 			Pointcut preInstantiationPointcut = Pointcuts.union(
 					aspectInstanceFactory.getAspectMetadata().getPerClausePointcut(), this.declaredPointcut);
-
-			// Make it dynamic: must mutate from pre-instantiation to post-instantiation state.
-			// If it's not a dynamic pointcut, it may be optimized out
-			// by the Spring AOP infrastructure after the first evaluation.
 			this.pointcut = new PerTargetInstantiationModelPointcut(
 					this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
 			this.lazy = true;
 		}
 		else {
-			// A singleton aspect.
 			this.pointcut = this.declaredPointcut;
 			this.lazy = false;
-			// 3.实例化增强器：根据注解中的信息初始化对应的增强器
+			// 3.实例化增强器：根据注解中的信息初始化对应的增强器!!!!!
 			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
 		}
 	}

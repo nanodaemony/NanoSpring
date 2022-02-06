@@ -66,6 +66,7 @@ public abstract class AopConfigUtils {
 
 	@Nullable
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
+		// 进去
 		return registerAutoProxyCreatorIfNecessary(registry, null);
 	}
 
@@ -73,6 +74,7 @@ public abstract class AopConfigUtils {
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
+		// 往容器导入了一个InfrastructureAdvisorAutoProxyCreator组件的beanDefinition
 		return registerOrEscalateApcAsRequired(InfrastructureAdvisorAutoProxyCreator.class, registry, source);
 	}
 
@@ -84,7 +86,7 @@ public abstract class AopConfigUtils {
 	@Nullable
 	public static BeanDefinition registerAspectJAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
-
+		// 往容器导入了一个AspectJAwareAdvisorAutoProxyCreator组件的beanDefinition
 		return registerOrEscalateApcAsRequired(AspectJAwareAdvisorAutoProxyCreator.class, registry, source);
 	}
 

@@ -10,10 +10,19 @@ repositories {
 }
 
 dependencies {
+    // 这里配置本项目中的依赖
     api(project(":spring-context"))
+    api(project(":spring-jdbc"))
     testImplementation 'junit:junit:4.12'
     // https://mvnrepository.com/artifact/org.aspectj/aspectjrt
     implementation group: 'org.aspectj', name: 'aspectjrt', version: '1.9.6'
+    // https://mvnrepository.com/artifact/org.aspectj/aspectjweaver
+    implementation group: 'org.aspectj', name: 'aspectjweaver', version: '1.9.6'
     // https://mvnrepository.com/artifact/com.alibaba/fastjson
     implementation group: 'com.alibaba', name: 'fastjson', version: '1.2.78'
+    // https://mvnrepository.com/artifact/mysql/mysql-connector-java
+    implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.27'
+    // https://mvnrepository.com/artifact/com.alibaba/druid
+    implementation group: 'com.alibaba', name: 'druid', version: '1.2.8'
+
 }

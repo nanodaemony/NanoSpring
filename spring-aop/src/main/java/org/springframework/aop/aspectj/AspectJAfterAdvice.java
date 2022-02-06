@@ -47,6 +47,7 @@ public class AspectJAfterAdvice extends AbstractAspectJAdvice
 			return mi.proceed();
 		}
 		finally {
+			// 由于后置增强是在finally中执行的 因此即使发生异常也会执行后置增强
 			invokeAdviceMethod(getJoinPointMatch(), null, null);
 		}
 	}

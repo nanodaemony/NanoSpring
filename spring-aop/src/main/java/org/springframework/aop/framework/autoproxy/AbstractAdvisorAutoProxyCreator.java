@@ -55,11 +55,13 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
+		// 1.调用父类AbstractAutoProxyCreator.setBeanFactory()方法
 		super.setBeanFactory(beanFactory);
 		if (!(beanFactory instanceof ConfigurableListableBeanFactory)) {
 			throw new IllegalArgumentException(
 					"AdvisorAutoProxyCreator requires a ConfigurableListableBeanFactory: " + beanFactory);
 		}
+		// 2.初始化bean工厂
 		initBeanFactory((ConfigurableListableBeanFactory) beanFactory);
 	}
 
@@ -93,9 +95,11 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
-		// 1.查找所有的候选Advisor
+		// 1.查找所有的候选Advisor增强器(事务相关的和自定义的)
+		// findCandidateAdvisors()在bean 实例化之前就调用了一次，找到且生成了事务相关的增强器和自己定义的增强器，
+		// 并且放到了缓存中，这里就从缓存中去增强器即可
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
-		// 2.从所有候选的Advisor中找出符合条件的
+		// 2.从所有候选的Advisor中找出符合条件的(筛选本类能用的，因为有的切面是针对特定的bean的)
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		// 3.扩展方法，留给子类实现
 		extendAdvisors(eligibleAdvisors);
@@ -112,6 +116,8 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 */
 	protected List<Advisor> findCandidateAdvisors() {
 		Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
+		// 通过增强查找工具类查找所有增强
+		// 这里主要用于寻找事务切面！！
 		return this.advisorRetrievalHelper.findAdvisorBeans();
 	}
 

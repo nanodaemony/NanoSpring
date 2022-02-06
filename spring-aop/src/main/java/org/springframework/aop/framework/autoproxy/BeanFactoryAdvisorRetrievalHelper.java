@@ -69,8 +69,6 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		String[] advisorNames = this.cachedAdvisorBeanNames;
 		if (advisorNames == null) {
 			//  1.1 如果缓存为空，则获取class类型为Advisor的所有bean名称
-			// Do not initialize FactoryBeans here: We need to leave all regular beans
-			// uninitialized to let the auto-proxy creator apply to them!
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
@@ -80,6 +78,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		}
 
 		// 2.遍历处理advisorNames
+		// 如果配置了事务，这里advisorNames就不为空
 		List<Advisor> advisors = new ArrayList<>();
 		for (String name : advisorNames) {
 			if (isEligibleBean(name)) {
@@ -104,8 +103,6 @@ public class BeanFactoryAdvisorRetrievalHelper {
 									logger.debug("Skipping advisor '" + name +
 											"' with dependency on currently created bean: " + ex.getMessage());
 								}
-								// Ignore: indicates a reference back to the bean we're trying to advise.
-								// We want to find advisors other than the currently created bean itself.
 								continue;
 							}
 						}

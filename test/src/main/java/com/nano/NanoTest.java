@@ -9,6 +9,7 @@ import com.nano.aop.Calculate;
 import com.nano.aop.NanoCalculate;
 import com.nano.event.NanoEvent;
 import com.nano.config.NanoConfig;
+import com.nano.transaction.service.PayService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
@@ -24,11 +25,14 @@ public class NanoTest {
 //		ApplicationContext sc = new ClassPathXmlApplicationContext("applicationContext.xml");
 //		sc.getBean("testBean");
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(NanoConfig.class);
-//
 		context.getBean("book");
 
 		Calculate calculate = (Calculate) context.getBean("nanoCalculate");
 		calculate.add(1, 2);
+
+		// 测试事务
+		testTransaction(context);
+
 		// 手动发布一个事件
 		context.publishEvent(new NanoEvent("Publish nano event...."));
 		try {
@@ -38,6 +42,12 @@ public class NanoTest {
 		}
 		// 容器关闭也发布事件
 		context.close();
+	}
+
+	private static void testTransaction(AnnotationConfigApplicationContext context) {
+
+		PayService payService = context.getBean(PayService.class);
+		payService.pay("12345", 2);
 	}
 
 }

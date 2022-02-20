@@ -6,11 +6,14 @@
  */
 package com.nano.config;
 
+import com.nano.condition.NanoCondition;
 import com.nano.entity.Book;
+import com.nano.entity.NanoLog;
 import com.nano.entity.Pencil;
 import com.nano.test.TestBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
@@ -41,6 +44,13 @@ public class NanoConfig {
     @Scope(value = "prototype")
     public Book book() {
         return new Book();
+    }
+
+    // 当容器中有pencil组件时nanoLog才会被实例化.
+    @Bean
+    @Conditional(value = NanoCondition.class)
+    public NanoLog tulingLog() {
+        return new NanoLog();
     }
 
 }

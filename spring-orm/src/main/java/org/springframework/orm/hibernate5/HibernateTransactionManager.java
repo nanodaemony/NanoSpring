@@ -391,6 +391,7 @@ public class HibernateTransactionManager extends AbstractPlatformTransactionMana
 
 	@Override
 	protected Object doGetTransaction() {
+		// new一个事务对象
 		HibernateTransactionObject txObject = new HibernateTransactionObject();
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
 

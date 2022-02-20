@@ -211,6 +211,7 @@ public abstract class AopUtils {
 	}
 
 	/**
+	 * 判断当前增强器是否为本来能用的
 	 * Can the given pointcut apply at all on the given class?
 	 * <p>This is an important test as it can be used to optimize
 	 * out a pointcut for a class.
@@ -226,18 +227,22 @@ public abstract class AopUtils {
 			return false;
 		}
 
-		// 获取方法匹配器
+		// 1.获取切点中的方法匹配器 TransactionAttributeSourcePointcut
+		// 该切点在创建BeanFactoryTransactionAttributeSourceAdvisor的时候
+		// 创建了切点TransactionAttributeSourcePointcut
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
 			return true;
 		}
 
+		// 2.判断方法匹配器是不是IntroductionAwareMethodMatcher
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
 		}
 
+		// 3.获取当前类的实现接口类型
 		Set<Class<?>> classes = new LinkedHashSet<>();
 		if (!Proxy.isProxyClass(targetClass)) {
 			classes.add(ClassUtils.getUserClass(targetClass));
@@ -245,10 +250,13 @@ public abstract class AopUtils {
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
 
 		for (Class<?> clazz : classes) {
+			// 4.获取并遍历接口的所有方法
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
 			for (Method method : methods) {
+				// 4.1.正在进行匹配的是methodMatcher.matches(method, targetClass)这个逻辑
 				if (introductionAwareMethodMatcher != null ?
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
+					// 4.2.看这个，实现类为TransactionAttributeSourcePointcut
 						methodMatcher.matches(method, targetClass)) {
 					return true;
 				}
@@ -281,15 +289,17 @@ public abstract class AopUtils {
 	 * @return whether the pointcut can apply on any method
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+		// 根据类的继承图 发现 BeanFactoryTransactionAttributeSourceAdvisor没实现IntroductionAdvisor接口
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
-		// 1.事务相关的BeanFactoryTransactionAttributeSourceAdvisor实现了PointcutAdvisor接口
+		// 1.注意：事务相关的BeanFactoryTransactionAttributeSourceAdvisor实现了PointcutAdvisor接口
 		else if (advisor instanceof PointcutAdvisor) {
+			// 1.1.强转为PointcutAdvisor
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
+			// 1.2.继续进去
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
-		}
-		else {
+		} else {
 			// It doesn't have a pointcut so we assume it applies.
 			return true;
 		}

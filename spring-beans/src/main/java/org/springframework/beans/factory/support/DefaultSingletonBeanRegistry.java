@@ -246,6 +246,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// 1.加锁，避免重复创建单例对象
 		synchronized (this.singletonObjects) {
 			// 2.首先检查beanName对应的bean实例是否在缓存中存在，如果已经存在则直接返回
+			// 这里检查的是一级缓存
 			Object singletonObject = this.singletonObjects.get(beanName);
 			// 3.beanName对应的bean实例不存在与缓存中，进行初始化
 			if (singletonObject == null) {

@@ -267,7 +267,7 @@ class ConfigurationClassParser {
 		// Recursively process any member (nested) classes first
 		processMemberClasses(configClass, sourceClass);
 
-		// 处理@PropertySource注解
+		// 1.处理@PropertySource注解
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), PropertySources.class,
 				org.springframework.context.annotation.PropertySource.class)) {
@@ -280,7 +280,7 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// 处理@ComponentScan注解(重要!!!)
+		// 2.处理@ComponentScan注解(重要!!!)
 		// 解析为ComponentScan类型的AnnotationAttributes
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
@@ -303,10 +303,10 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// 处理@Import注解
+		// 3.处理@Import注解
 		processImports(configClass, sourceClass, getImports(sourceClass), true);
 
-		// 处理@ImportResource注解(用的不多忽略)
+		// 4.处理@ImportResource注解(用的不多忽略)
 		AnnotationAttributes importResource =
 				AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
 		if (importResource != null) {
@@ -611,7 +611,8 @@ class ConfigurationClassParser {
 						Class<?> candidateClass = candidate.loadClass();
 						ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
 						ParserStrategyUtils.invokeAwareMethods(selector, this.environment, this.resourceLoader, this.registry);
-						// Spring Boot自动注入通过DeferredImportSelector进行
+
+						// 1.Spring Boot自动注入通过DeferredImportSelector实现!!!!!!!
 						if (this.deferredImportSelectors != null && selector instanceof DeferredImportSelector) {
 							this.deferredImportSelectors.add(
 									new DeferredImportSelectorHolder(configClass, (DeferredImportSelector) selector));

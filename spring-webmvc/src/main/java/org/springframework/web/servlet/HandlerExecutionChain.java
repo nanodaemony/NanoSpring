@@ -40,8 +40,10 @@ public class HandlerExecutionChain {
 
 	private static final Log logger = LogFactory.getLog(HandlerExecutionChain.class);
 
+	// 执行请求的Handler
 	private final Object handler;
 
+	// 拦截器
 	@Nullable
 	private HandlerInterceptor[] interceptors;
 
@@ -135,10 +137,14 @@ public class HandlerExecutionChain {
 	 * that this interceptor has already dealt with the response itself.
 	 */
 	boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		// 1.获取当前处理器链中的所有拦截器
 		HandlerInterceptor[] interceptors = getInterceptors();
 		if (!ObjectUtils.isEmpty(interceptors)) {
+			// 2.顺序遍历全部拦截器
 			for (int i = 0; i < interceptors.length; i++) {
 				HandlerInterceptor interceptor = interceptors[i];
+				// 3.执行拦截器的preHandle()方法
+				// 如果返回false，直接停止执行，视为处理完成，并触发拦截器的完成后方法
 				if (!interceptor.preHandle(request, response, this.handler)) {
 					triggerAfterCompletion(request, response, null);
 					return false;
@@ -159,6 +165,7 @@ public class HandlerExecutionChain {
 		if (!ObjectUtils.isEmpty(interceptors)) {
 			for (int i = interceptors.length - 1; i >= 0; i--) {
 				HandlerInterceptor interceptor = interceptors[i];
+				// 调用拦截器后置方法
 				interceptor.postHandle(request, response, this.handler, mv);
 			}
 		}

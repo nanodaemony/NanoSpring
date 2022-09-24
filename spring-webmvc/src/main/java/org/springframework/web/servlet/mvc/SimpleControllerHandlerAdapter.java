@@ -49,6 +49,7 @@ public class SimpleControllerHandlerAdapter implements HandlerAdapter {
 	public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
 
+		// 处理请求
 		return ((Controller) handler).handleRequest(request, response);
 	}
 
